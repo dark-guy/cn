@@ -1,0 +1,79 @@
+-------------------------------------------------
+RIP
+-------------------------------------------------
+1) pc->switch->router->router->switch->pc
+
+2) connect it
+
+3)add gateway and ip for pc's and ip for router
+
+4) configure all the connection of se and fe
+
+5)add all the networks in rip tab of both the router
+
+
+-------------------------------------------------
+OSPF
+-------------------------------------------------
+1) pc->switch->router->router->switch->pc
+			^       /
+			 \	 /
+			  \   v
+			router
+
+2) connect it
+
+3) add gateway and ip for pc's and ip for router
+
+4) configure all the connection of se and fe
+
+5) router cli
+	
+	exit
+	router ospf 1
+	network A 0.0.0.255 area 0
+	network r1 255.255.255.0 area 0
+	network r2 255.255.255.0 area 0
+
+
+-------------------------------------------------
+DHCP
+-------------------------------------------------
+1) 1 router, 1 switch and 2 end devices
+
+2) connect it
+
+3) turn on gigabyte ethernet in router
+
+4) cli of router
+
+	exit
+	ip dhcp pool DHCP
+	network 192.168.0.0 255.255.255.0
+	default-router 192.168.0.1
+
+5) add the ip in router' giga byte
+
+6) pc->ip config->staic to dhcp-> connected
+
+
+-------------------------------------------------
+SLAAC
+-------------------------------------------------
+1) 1 router, 1 switch and 2 end devices
+
+2) connect it
+
+3) turn on gigabyte ethernet in router
+
+4) cli of router
+
+	exit
+	ipv6 unicast-routing
+	int g0/0
+	ipv6 address 2001:d8:acad:1::1/64
+	exit
+
+
+5) pc->ip config->static to automatic-> connected
+
