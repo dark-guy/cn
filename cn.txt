@@ -1,0 +1,708 @@
+----------------------------------
+TCP CLIENT
+----------------------------------
+
+import java.io.*;
+import java.net.*;
+
+public class ChatClient {
+    public static void main(String[] args) throws Exception{
+        
+        Socket s = new Socket( "localhost" , 9999 );
+       
+        BufferedReader socketin = new BufferedReader( new InputStreamReader( s.getInputStream() ) );
+        PrintStream socketout = new PrintStream( s.getOutputStream() );
+
+        BufferedReader stdin = new BufferedReader( new InputStreamReader(System.in ) );
+        String msg , inp;
+
+        while( true ){
+            System.out.print( "Client : " );
+            inp = stdin.readLine();
+            socketout.println(inp);
+            msg = socketin.readLine();
+            System.out.println( "Server : " + msg  );
+
+            if( msg.equals("bye") ) break;
+        }
+        
+        s.close();
+        socketin.close(); 
+	  socketout.close();
+    }    
+}
+
+----------------------------------
+TCP SERVER
+----------------------------------
+
+import java.net.*;
+import java.io.*;
+
+public class ChatServer {
+    public static void main(String[] args) throws Exception{
+        ServerSocket ss = new ServerSocket(9999);
+        Socket s = ss.accept();
+
+
+        BufferedReader socketin = new BufferedReader( new InputStreamReader( s.getInputStream() ) );
+        PrintStream socketout = new PrintStream( s.getOutputStream() );
+
+        BufferedReader stdin = new BufferedReader( new InputStreamReader(System.in ) );
+        String msg , inp;
+
+        while( true ){
+            msg = socketin.readLine();
+            if( msg.equals("bye") ){
+                socketout.println("bye");
+                break;
+            }
+
+            System.out.print( "Client : " + msg + "\n");
+            System.out.print( "Server : " );
+            inp = stdin.readLine();
+
+            socketout.println(inp);
+        }
+        
+        s.close();
+        socketin.close(); socketout.close();
+        ss.close();
+    }
+}
+
+----------------------------------
+UDP CLIENT
+----------------------------------
+
+import java.io.*; 
+import java.net.*; 
+class UDPCHATClient 
+{ 
+    public static DatagramSocket clientsocket; 
+    public static DatagramPacket dp; 
+    public static BufferedReader dis; 
+    public static InetAddress ia; 
+    public static byte buf[] = new byte[1024]; 
+    public static int cport = 789, sport = 790; 
+    public static void main(String[] a) throws IOException 
+    { 
+        clientsocket = new DatagramSocket(cport); 
+        dp = new DatagramPacket(buf, buf.length); 
+        dis = new BufferedReader(new InputStreamReader(System.in)); 
+        ia = InetAddress.getLocalHost(); 
+        System.out.println("Client is Running... Type 'bye' to Quit"); 
+        while(true) 
+        { 
+            String str = new String(dis.readLine()); 
+            buf = str.getBytes(); 
+            if(str.equals("bye")) 
+            { 
+                System.out.println("Terminated..."); 
+                clientsocket.send(new DatagramPacket(buf,str.length(), ia,sport)); 
+                break; 
+            } 
+            clientsocket.send(new DatagramPacket(buf,str.length(), ia, sport)); 
+            clientsocket.receive(dp); 
+            String str2 = new String(dp.getData(), 0, dp.getLength()); 
+            System.out.println("Server: " + str2); 
+        } 
+    }
+}
+
+----------------------------------
+UDP SERVER
+----------------------------------
+
+import java.io.*; 
+import java.net.*; 
+class UDPCHATServer 
+{ 
+    public static DatagramSocket serversocket; 
+    public static DatagramPacket dp; 
+    public static BufferedReader dis; 
+    public static InetAddress ia; 
+    public static byte buf[] = new byte[1024]; 
+    public static int cport = 789,sport=790; 
+    public static void main(String[] a) throws IOException 
+    { 
+        serversocket = new DatagramSocket(sport); 
+        dp = new DatagramPacket(buf,buf.length); 
+        dis = new BufferedReader (new InputStreamReader(System.in)); 
+        ia = InetAddress.getLocalHost(); 
+        System.out.println("Server is Running..."); 
+        while(true) 
+        { 
+            serversocket.receive(dp); 
+            String str = new String(dp.getData(), 0,dp.getLength()); 
+            if(str.equals("bye")) 
+            { 
+                System.out.println("Terminated..."); 
+                break; 
+            } 
+            System.out.println("Client: " + str); 
+            String str1 = new String(dis.readLine()); 
+            buf = str1.getBytes(); 
+            serversocket.send(new DatagramPacket(buf,str1.length(), ia, cport)); 
+        } 
+    } 
+}
+
+----------------------------------
+FTP SERVER
+----------------------------------
+
+import java.io.*;
+import java.net.*;
+
+public class Server {
+    private static DataOutputStream dos;
+    private static DataInputStream dis;
+
+    public static void main(String[] args) throws Exception {
+        ServerSocket ss = new ServerSocket(5050);
+        Socket client = ss.accept();
+        System.out.println("Connected to client");
+        dos = new DataOutputStream(client.getOutputStream());
+        dis = new DataInputStream(client.getInputStream());
+        long fileSize = dis.readLong();
+        String fileName = dis.readUTF();
+        receiveFile(fileName, fileSize);
+        dis.close();
+        dos.close();
+        ss.close();
+    }
+
+    static void receiveFile(String fileName, long fileSize) throws Exception {
+        int bytes = 0;
+        FileOutputStream fos = new FileOutputStream(fileName);
+        byte[] buffer = new byte[4 * 1024];
+        while (fileSize > 0 &&
+                (bytes = dis.read(
+                        buffer, 0,
+                        (int) Math.min(buffer.length, fileSize))) != 1) {
+            fos.write(buffer, 0, bytes);
+            fileSize -= bytes;
+        }
+        System.out.println("Received " + fileName);
+        fos.close();
+    }
+}
+
+----------------------------------
+FTP CLIENT
+----------------------------------
+
+import java.net.*;
+import java.io.*;
+
+public class Client {
+    static DataOutputStream dos;
+    static DataInputStream dis;
+
+    public static void main(String[] args) throws Exception {
+        Socket s = new Socket("localhost", 5050);
+        dos = new DataOutputStream(s.getOutputStream());
+        dis = new DataInputStream(s.getInputStream());
+        String filePath = "D:\\Temp\\old\\", fileName = "cap.pdf";
+        System.out.println("Sending file to server");
+        sendFile(filePath, fileName);
+        System.out.println("File sent successfully");
+        dis.close();
+        dos.close();
+        s.close();
+    }
+
+    static void sendFile(String filePath, String fileName) throws Exception {
+        File f = new File(filePath + fileName);
+        FileInputStream fis = new FileInputStream(f);
+        dos.writeLong(f.length());
+        dos.writeUTF(fileName);
+        byte[] buffer = new byte[4 * 1024];
+        int bytes = 0;
+        while ((bytes = fis.read(buffer)) != -1) {
+            dos.write(buffer, 0, bytes);
+            dos.flush();
+        }
+        fis.close();
+    };
+};
+
+----------------------------------
+HTTP GET SERVER
+----------------------------------
+
+import java.io.*;
+import java.net.*;
+import java.util.*;
+
+public class Server {
+    static String getReq(String urlString) throws Exception {
+        URL url = new URL(urlString);
+        HttpURLConnection con = (HttpURLConnection) url.openConnection();
+        int responseCode = con.getResponseCode();
+        System.out.println("Response code: " + responseCode);
+        StringBuilder res = new StringBuilder();
+        if (responseCode == HttpURLConnection.HTTP_OK) {
+            Scanner in = new Scanner(new InputStreamReader(con.getInputStream()));
+            while (in.hasNextLine())
+                res.append(in.nextLine());
+        }
+        return res.toString();
+    }
+
+    public static void main(String[] args) throws Exception {
+        ServerSocket ss = new ServerSocket(5050);
+        Socket client = ss.accept();
+        PrintWriter out = new PrintWriter(client.getOutputStream(), true);
+        Scanner in = new Scanner(new InputStreamReader(client.getInputStream()));
+        String url = in.next();
+        System.out.println(url);
+        out.println(getReq(url));
+        ss.close();
+    }
+}
+
+----------------------------------
+HTTP GET CLIENT
+----------------------------------
+
+import java.io.*;
+import java.net.*;
+import java.util.Scanner;
+
+public class Client {
+    public static void main(String[] args) throws Exception {
+        Scanner sc = new Scanner(System.in);
+        Socket clientSocket = new Socket("localhost", 5050);
+        PrintWriter out = new PrintWriter(clientSocket.getOutputStream(), true);
+        Scanner in = new Scanner(new InputStreamReader(clientSocket.getInputStream()));
+        System.out.print("URL>>");
+        String url = sc.next();
+        out.println(url);
+        String res = in.nextLine();
+        System.out.println("GET Resoponse:\n" + res);
+        clientSocket.close();
+    }
+}
+
+----------------------------------
+HTTP POST SERVER
+----------------------------------
+
+import java.io.*;
+import java.net.*;
+import java.util.*;
+
+public class Server {
+    static void getReq(String urlString, String data, PrintWriter clientOut) throws Exception {
+        URL url = new URL(urlString);
+        HttpURLConnection con = (HttpURLConnection) url.openConnection();
+        con.setRequestMethod("POST");
+        con.setDoOutput(true);
+        con.getOutputStream().write(data.getBytes());
+        int responseCode = con.getResponseCode();
+        clientOut.println("Response code - " + responseCode + "\n");
+        if (responseCode == HttpURLConnection.HTTP_OK) {
+            Scanner responseIn = new Scanner(new InputStreamReader(con.getInputStream()));
+            while (responseIn.hasNextLine()) {
+                clientOut.println(responseIn.nextLine());
+            }
+        }
+    }
+
+    public static void main(String[] args) throws Exception {
+        ServerSocket ss = new ServerSocket(5050);
+        Socket client = ss.accept();
+        PrintWriter out = new PrintWriter(client.getOutputStream(), true);
+        Scanner in = new Scanner(new InputStreamReader(client.getInputStream()));
+        String url = in.next(),
+                data = in.next();
+        getReq(url, data, out);
+        ss.close();
+    }
+}
+
+----------------------------------
+HTTP POST CLIENT
+----------------------------------
+
+import java.io.*;
+import java.net.*;
+import java.util.Scanner;
+
+public class Client {
+    public static void main(String[] args) throws Exception {
+        Scanner sc = new Scanner(System.in);
+        Socket clientSocket = new Socket("localhost", 5050);
+        PrintWriter out = new PrintWriter(clientSocket.getOutputStream(), true);
+        Scanner in = new Scanner(new InputStreamReader(clientSocket.getInputStream()));
+        System.out.print("URL>>");
+        String url = sc.nextLine();
+        out.println(url);
+        System.out.println("Enter POST data seperated by '&'\nE.g. 'name=alice&age=12'");
+        System.out.print("POST data>>");
+        String postData = sc.nextLine();
+        out.println(postData);
+        String resCode = in.nextLine();
+        System.out.println(resCode);
+        while (in.hasNextLine())
+            System.out.println(in.nextLine());
+        clientSocket.close();
+    }
+}
+
+----------------------------------
+DNS SERVER
+----------------------------------
+
+import java.io.*; 
+import java.net.*; 
+import java.util.*; 
+
+class DNSServer
+{
+    public static void main(String args[])throws Exception{
+        DatagramSocket server=new DatagramSocket(1309); 
+        while(true){ 
+            int flag=0;
+            byte[]sendbyte=new byte[1024]; 
+            byte[]receivebyte=new byte[1024]; 
+            DatagramPacket receiver=new DatagramPacket(receivebyte,receivebyte.length); 
+            server.receive(receiver);
+            String str=new String(receiver.getData()); 
+            String s=str.trim();      
+            InetAddress addr=receiver.getAddress(); 
+            int port=receiver.getPort();
+            String ip[]={"192.165.1.1","192.165.1.5","192.168.1.1","192.165.1.6","192.165.1.2"};
+            String name[]={"www.google.com","www.amazon.in","localhost","www.gmail.com","www.youtube.com"}; 
+            for(int i=0;i<ip.length;i++)
+            {
+                if(s.equals(ip[i]))
+                {
+                    flag=1;
+                    sendbyte=name[i].getBytes();
+                    DatagramPacket sender=new DatagramPacket(sendbyte,sendbyte.length,addr, port);
+                    server.send(sender); 
+                    break;
+                }
+                else if(s.equals(name[i]))
+                {
+                    flag=1;
+                    sendbyte=ip[i].getBytes();
+                    DatagramPacket sender=new DatagramPacket(sendbyte,sendbyte.length,addr, port);
+                    server.send(sender); 
+                    break;
+                }
+            }
+            if(flag==0){
+                String send="The specified IP or Domain Name is not logged in the DNS Server";
+                sendbyte=send.getBytes();
+                DatagramPacket sender=new DatagramPacket(sendbyte,sendbyte.length,addr, port);
+                server.send(sender); 
+            }
+            break;
+        }
+        server.close();
+    }
+}
+
+----------------------------------
+DNS CLIENT
+----------------------------------
+
+import java.io.*; 
+import java.net.*; 
+import java.util.*; 
+
+class DNSClient
+{
+    public static void main(String args[]) throws Exception
+    {
+        DatagramSocket client=new DatagramSocket(); 
+        InetAddress addr =InetAddress.getByName("localhost");
+        byte[]sendbyte=new byte[1024];
+        byte[]receivebyte=new byte[1024];
+        BufferedReader in=new BufferedReader(new InputStreamReader(System.in)); 
+        System.out.println("\nEnter DOMAIN NAME OR IP address: ");
+        String str=in.readLine(); 
+        sendbyte=str.getBytes();
+        DatagramPacket sender=new DatagramPacket(sendbyte,sendbyte.length,addr,1309); 
+        client.send(sender);
+        DatagramPacket receiver= new DatagramPacket(receivebyte,receivebyte.length); 
+        client.receive(receiver);
+        String s=new String(receiver.getData());
+        System.out.println("IP adddress or DOMAIN NAME :"+s.trim() + "\n"); 
+        client.close();
+    }
+}
+
+----------------------------------
+SMTP
+----------------------------------
+
+import java.util.*;
+import javax.mail.*;
+import javax.mail.internet.*;
+
+public class SMTP {
+    public static void main(String[] a) throws Exception {
+        Properties props = System.getProperties();
+        String to = "prasathkarthiban1999@gmail.com",
+                from = "kuregamikai@gmail.com",
+                password = "aqwigygolxgwmciz";
+        props.put("mail.smtp.host", "smtp.gmail.com");
+        props.put("mail.smtp.port", "465");
+        props.put("mail.smtp.ssl.enable", "true");
+        props.put("mail.smtp.auth", "true");
+        Session session = Session.getInstance(props, new Authenticator() {
+            @Override
+            protected PasswordAuthentication getPasswordAuthentication() {
+                return new PasswordAuthentication(from, password);
+            }
+        });
+        session.setDebug(true);
+        MimeMessage message = new MimeMessage(session);
+        message.setFrom(new InternetAddress(from));
+        message.addRecipient(Message.RecipientType.TO, new InternetAddress(to));
+        message.setSubject("my subject");
+        message.setText("hello there!");
+        Transport.send(message);
+    }
+}
+
+----------------------------------
+POP3
+----------------------------------
+
+import java.util.*;
+import javax.mail.*;
+
+class POP3 {
+    public static void main(String args[]) throws Exception {
+        Properties props = System.getProperties();
+        props.put("mail.pop3.host","pop.gmail.com");
+        props.put("mail.pop3.port", "995");
+        props.put("mail.pop3.starttls.enable", "true");
+        
+        String host="pop.gmail.com",
+                username="balajisankar555@gmail.com",
+                pwd="lavm dhqn ubbk byfk";
+        Session session = Session.getDefaultInstance(props);
+        Store store=session.getStore("pop3s");
+        store.connect(host, username, pwd);
+        Folder folder=store.getFolder("INBOX");
+        folder.open(Folder.READ_ONLY);
+        Message[] msgs=folder.getMessages();
+        int recent=msgs.length-1;
+        Message recentMsg=msgs[recent];
+        recentMsg.writeTo(System.out);
+        
+        folder.close();
+        store.close();
+                      
+    }
+}
+
+----------------------------------
+PING
+----------------------------------
+
+import java.io.*;
+import java.net.*;
+import java.util.*;
+
+public class PingProgram {
+    
+     static void commands(ArrayList<String> commandList) throws Exception
+    {
+        // creating the sub process, execute system command
+        ProcessBuilder build = new ProcessBuilder(commandList);
+        Process process = build.start();
+         
+        // to read the output
+        BufferedReader input = new BufferedReader(new InputStreamReader(process.getInputStream()));
+        BufferedReader Error = new BufferedReader(new InputStreamReader(process.getErrorStream()));
+        String s = null;
+         
+        while((s = input.readLine()) != null)
+        {
+            System.out.println(s);
+        }
+        System.out.println("Error (if any): ");
+        while((s = Error.readLine()) != null)
+        {
+            System.out.println(s);
+        }
+    }
+     
+    public static void sendPingRequest(String ipAddress) throws UnknownHostException, IOException
+  {
+    InetAddress ip = InetAddress.getByName(ipAddress);
+    System.out.println("Sending Ping Request to " + ipAddress);
+    if (ip.isReachable(5000))
+      System.out.println("Host is reachable");
+    else
+      System.out.println("Sorry ! The host is not reachable");
+  }
+  
+  public static void main(String[] args) throws UnknownHostException, IOException, Exception
+  {
+    
+    ArrayList<String> commandList = new ArrayList<String>();
+    commandList.add("ping");
+    
+    System.out.println("\n\t\tPing and Trace program\n");
+    Scanner obj = new Scanner(System.in);
+    System.out.println("Enter the IP Address/Domain Name:");
+    String ipAddress = obj.nextLine();
+    sendPingRequest(ipAddress);
+    commandList.add(ipAddress);
+    PingProgram.commands(commandList);
+    
+    System.out.println("\nTracing route to IP Address/Domain Name " + ipAddress );
+    commandList.clear();
+    commandList.add("tracert");
+    commandList.add(ipAddress);
+    
+    PingProgram.commands(commandList);
+
+  }
+}
+    
+
+//Test IP addresses
+//127.0.0.1 - accessible
+//133.192.31.42 - not accessible
+//145.154.42.58 - not accessible
+
+----------------------------------
+PASSWORD
+----------------------------------
+
+lavm dhqn ubbk byfk
+
+Skip to content
+Search or jump to…
+Pull requests
+Issues
+Codespaces
+Marketplace
+Explore
+ 
+@dark-guy 
+dark-guy
+/
+cn
+Public
+Code
+Issues
+Pull requests
+Actions
+Projects
+Wiki
+Security
+Insights
+Settings
+cn/cisco cmd.txt
+@dark-guy
+dark-guy Add files via upload
+Latest commit d7c4f51 6 hours ago
+ History
+ 1 contributor
+79 lines (51 sloc)  1.53 KB
+
+-------------------------------------------------
+RIP
+-------------------------------------------------
+1) pc->switch->router->router->switch->pc
+
+2) connect it
+
+3)add gateway and ip for pc's and ip for router
+
+4) configure all the connection of se and fe
+
+5)add all the networks in rip tab of both the router
+
+
+-------------------------------------------------
+OSPF
+-------------------------------------------------
+1) pc->switch->router->router->switch->pc
+			^       /
+			 \	 /
+			  \   v
+			router
+
+2) connect it
+
+3) add gateway and ip for pc's and ip for router
+
+4) configure all the connection of se and fe
+
+5) router cli
+	
+	exit
+	router ospf 1
+	network A 0.0.0.255 area 0
+	network r1 255.255.255.0 area 0
+	network r2 255.255.255.0 area 0
+
+
+-------------------------------------------------
+DHCP
+-------------------------------------------------
+1) 1 router, 1 switch and 2 end devices
+
+2) connect it
+
+3) turn on gigabyte ethernet in router
+
+4) cli of router
+
+	exit
+	ip dhcp pool DHCP
+	network 192.168.0.0 255.255.255.0
+	default-router 192.168.0.1
+
+5) add the ip in router' giga byte
+
+6) pc->ip config->staic to dhcp-> connected
+
+
+-------------------------------------------------
+SLAAC
+-------------------------------------------------
+1) 1 router, 1 switch and 2 end devices
+
+2) connect it
+
+3) turn on gigabyte ethernet in router
+
+4) cli of router
+
+	exit
+	ipv6 unicast-routing
+	int g0/0
+	ipv6 address 2001:d8:acad:1::1/64
+	exit
+
+
+5) pc->ip config->static to automatic-> connected
+
+Footer
+© 2022 GitHub, Inc.
+Footer navigation
+Terms
+Privacy
+Security
+Status
+Docs
+Contact GitHub
+Pricing
+API
+Training
+Blog
+About
+cn/cisco cmd.txt at main · dark-guy/cn
